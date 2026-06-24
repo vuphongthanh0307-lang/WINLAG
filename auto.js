@@ -81,7 +81,7 @@ function createBot() {
         // ==========================================
         // [NÂNG CẤP VIP] BÁO ĐỘNG ĐỎ: RÚT PHÍCH CẮM KHI THẤY STAFF
         // ==========================================
-        if (message.includes('Losts đã tham gia') || message.includes('Nugget_Champion đã tham gia')) {
+        if (message.includes('Losts vừa tham gia') || message.includes('Nugget_Champion vừa tham gia')) {
             console.log('\n================================================================');
             console.log('🚨 [BÁO ĐỘNG ĐỎ] CHẠY NGAY ĐI! ADMIN/STAFF VỪA VÀO SERVER! 🚨');
             console.log('🚨 RÚT PHÍCH CẮM KHẨN CẤP! TẮT TOÀN BỘ HỆ THỐNG ĐỂ BẢO TOÀN ACC! 🚨');
