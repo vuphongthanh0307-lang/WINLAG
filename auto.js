@@ -537,6 +537,7 @@ function sendDigPacket(targetPos) {
 }
 
 // --- MODULE 5: CÀY NHƯ HACK CLIENT (UPDATE: BIẾT PHANH LẠI KHI LAG) ---
+// --- MODULE 5: CÀY NHƯ HACK CLIENT (BẢN TỐI ƯU SIÊU MƯỢT - KHÔNG KHỰNG) ---
 async function farmSuperFast() {
     const farmlands = currentBot.findBlocks({ matching: currentBot.registry.blocksByName.farmland.id, maxDistance: 3, count: 4 });
 
@@ -544,33 +545,31 @@ async function farmSuperFast() {
         const cropPos = pos.offset(0, 1, 0);
         const cropBlock = currentBot.blockAt(cropPos);
 
-        await currentBot.lookAt(cropPos.offset(0.5, 0.5, 0.5), true);
+        // [!] TỐI ƯU 1: Tháo gông 'await'. Quăng lệnh xoay đầu vào background chạy song song, code không cần đứng lại chờ nó xoay xong.
+        currentBot.lookAt(cropPos.offset(0.5, 0.5, 0.5), true).catch(()=>{});
 
         if (cropBlock.name === 'air') {
-            // Check xem việc cầm khoai tây có thành công không
             const isReady = await fastEquip(currentBot.registry.itemsByName.potato.id);
             if (!isReady) {
-                // Nếu tay đang trống không do lag -> Đứng im đợi nửa giây rồi hủy vòng lặp hiện tại
-                await sleep(500); 
+                await sleep(100); // Giảm thời gian chờ lag xuống còn 0.1s
                 return; 
             }
             sendInteractPacket(pos); 
-            await sleep(50); 
+            await sleep(20); // [!] TỐI ƯU 2: Ép xung delay từ 50ms xuống 20ms (tốc độ ánh sáng)
         }
         else if (cropBlock.name === 'potatoes' && cropBlock.metadata < 7) {
-            // Check xem việc cầm bột xương có thành công không
             const isReady = await fastEquip(currentBot.registry.itemsByName.dye.id);
             if (!isReady) {
-                await sleep(500); 
+                await sleep(100); 
                 return; 
             }
             sendInteractPacket(cropPos); 
-            await sleep(50); 
+            await sleep(20); 
         }
         else if (cropBlock.name === 'potatoes' && cropBlock.metadata === 7) {
-            try {
-                await currentBot.dig(cropBlock);
-            } catch (e) {}
+            // [!] TỐI ƯU 3: Bỏ hàm bot.dig() rề rà, xài súng bắn Packet thẳng lên server (0ms Ping Bypass)
+            sendDigPacket(cropPos);
+            // Đập xong tuyệt đối không chờ đợi, nhảy sang củ kế tiếp ngay lập tức!
         }
     }
 }
