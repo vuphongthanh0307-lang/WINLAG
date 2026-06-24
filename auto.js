@@ -100,7 +100,7 @@ function createBot() {
 
         // 1.5. LÌ LỢM ĐĂNG NHẬP 
         if (lowerMsg.includes('đăng nhập bằng lệnh: /dn') || lowerMsg.includes('vui lòng đăng nhập')) {
-            setTimeout(() => bot.chat('/dn 18112007'), 1500); 
+            setTimeout(() => bot.chat('/dn Windvu2193'), 1500); 
         }
 
         // BƯỚC 1: NHẬN DIỆN SONAR ĐANG QUÉT
