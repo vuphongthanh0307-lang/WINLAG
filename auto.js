@@ -24,10 +24,12 @@ console.error = function(...args) {
 
 const RECONNECT_DELAY = 20000; 
 
+// ==========================================
 // GIỮ MẠNG CHO REPLIT
+// ==========================================
 const app = express();
 const port = process.env.PORT || 3000;
-app.get('/', (req, res) => res.send('Bot đang Farm Nether Wart VIP Pro!'));
+app.get('/', (req, res) => res.send('Bot AppleMeoMeoz đang Farm Nether Wart VIP Pro!'));
 app.listen(port, () => console.log(`[Web] Server đang chạy trên port ${port}`));
 
 process.on('uncaughtException', (err) => console.log('[Khiên Bất Tử] Chặn lỗi:', err.message));
@@ -39,19 +41,19 @@ const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
 let botState = 'DISCONNECTED'; 
 let currentBot; 
 let isLoggingIn = false; 
+let isFarmLoopRunning = false; 
 let isGUIOpen = false; 
 let failCount = 0;
 let isSonarKick = false; 
-let isKilledByAdmin = false; 
 
-// BỘ NHỚ KHÔNG GIAN
+// BỘ NHỚ KHÔNG GIAN: Lưu trữ tọa độ bãi farm (Được giữ nguyên ngay cả khi bot reconnect)
 let knownFarmPlots = []; 
 
 function createBot() {
     const bot = mineflayer.createBot({
         host: 'aemine.vn',
         port: 25565,
-        username: 'winlxag5553', 
+        username: 'AppleMeoMeoz', 
         version: '1.12.2',
         viewDistance: 'tiny', 
         checkTimeoutInterval: 60000,
@@ -71,7 +73,7 @@ function createBot() {
             isLoggingIn = true;
             console.log('[Hub] Đã kết nối server, chuẩn bị đăng nhập...');
             await sleep(2000);
-            bot.chat('/dn Windvu@2@1@9@30849009630'); 
+            bot.chat('/dn 18112007'); 
             console.log('[Hub] Đã gửi lệnh login! Đang nghe ngóng...');
             botState = 'FIRST_LOGIN';
         }
@@ -80,17 +82,7 @@ function createBot() {
     bot.on('messagestr', (message) => {
         const lowerMsg = message.toLowerCase();
 
-        // [NÂNG CẤP VIP] ĐÓNG BĂNG KHI THẤY STAFF
-        if (lowerMsg.includes('losts vừa tham gia') || lowerMsg.includes('nugget_champion vừa tham gia')) {
-            console.log('\n================================================================');
-            console.log('🚨 [BÁO ĐỘNG ĐỎ] ADMIN/STAFF VỪA VÀO SERVER! 🚨');
-            console.log('🚨 ĐÓNG BĂNG HỆ THỐNG VĨNH VIỄN ĐỂ BẢO TOÀN ACC! 🚨');
-            console.log('================================================================\n');
-            isKilledByAdmin = true; 
-            bot.quit();             
-            return;
-        }
-
+        // TỰ ĐỘNG GIẢI CAPTCHA
         if (lowerMsg.includes('/captcha')) {
             const match = message.match(/\/captcha\s+([a-zA-Z0-9]+)/i);
             if (match) {
@@ -99,35 +91,43 @@ function createBot() {
             }
         }
 
+        // ĐĂNG NHẬP LẠI NẾU BỊ ĐÒI
         if (lowerMsg.includes('đăng nhập bằng lệnh: /dn') || lowerMsg.includes('vui lòng đăng nhập')) {
-            setTimeout(() => bot.chat('/dn Windvu@2@1@9@30849009630'), 1500); 
+            setTimeout(() => bot.chat('/dn 18112007'), 1500); 
         }
 
+        // NHẬN DIỆN SONAR ĐANG QUÉT
         if (lowerMsg.includes('sonar') && lowerMsg.includes('xác minh')) {
-            console.log('>>> [Anti-Bot] Bị Sonar soi! Đứng im chờ xác minh...');
+            console.log('>>> [Anti-Bot] Bị Sonar soi! Kích hoạt tà thuật đứng im...');
             bot.clearControlStates();
             botState = 'WAIT_AUTO';
             isSonarKick = true; 
         }
 
+        // BỘ LỌC TỰ ĐỘNG JOIN PARTY
         if (message.includes('/pt join')) {
             const match = message.match(/\/pt join (\S+)/);
             if (match) {
-                console.log(`[Party] Phát hiện lời mời từ: ${match[1]}! Đang join...`);
+                console.log(`[Party] Phát hiện lời mời từ anh em: ${match[1]}! Đang quất lệnh join...`);
                 setTimeout(() => bot.chat(`/party join ${match[1]}`), 500);
             }
         }
 
+        // BẢO TRÌ/KICK
         if (lowerMsg.includes('kicked from') || lowerMsg.includes('bảo trì') || lowerMsg.includes('đã đóng')) {
-            console.log('[Hệ Thống] Phát hiện Bảo Trì/Kick! Đang nằm chờ...');
+            console.log('[Hệ Thống] Phát hiện Bảo Trì/Kick! Đang nằm chờ server tự kéo...');
             botState = 'MAINTENANCE'; 
             bot.isFarmingActive = false; 
         }
 
+        // BỊ LỖI GHẾ NGỒI
         if (message.includes('không thể ngồi trong không khí')) {
             setTimeout(() => { if (botState === 'FARMING') bot.chat('/sit'); }, 3000);
         }
 
+        // ==========================================
+        // KHÓA HUB, AUTO /HOME & KÍCH HOẠT MÁY CÀY
+        // ==========================================
         if (lowerMsg.includes('vừa tham gia máy chủ') && lowerMsg.includes(bot.username.toLowerCase())) {
             if (botState !== 'FARMING') {
                 console.log(`[Mắt Thần] Thấy thông báo lọt cụm: ${message}`);
@@ -147,7 +147,7 @@ function createBot() {
         if (hasCompass) {
             if (botState === 'FIRST_LOGIN') botState = 'IN_HUB'; 
             if (botState === 'IN_HUB' && !isGUIOpen) {
-                console.log('[Hub] Sẵn sàng la bàn! Đang click vào cụm...');
+                console.log('[Hub] Sẵn sàng la bàn! Đang click đục lỗ vào cụm...');
                 currentBot.setQuickBarSlot(4);
                 currentBot.activateItem();
             }
@@ -163,6 +163,7 @@ function createBot() {
             await bot.clickWindow(20, 0, 0); 
             await sleep(2000);
             await bot.clickWindow(14, 0, 0); 
+            console.log('[Menu] Đã bấm chọn cụm Sinh Tồn! Chờ load map...');
         } catch (err) {
             console.log('Lỗi click GUI Sảnh:', err.message);
         } finally {
@@ -187,7 +188,7 @@ function createBot() {
         bot.clearControlStates();
         bot.isFarmingActive = false;
         if (botState !== 'FARMING') {
-            console.log('[CẢNH BÁO] Bot chết ở Sảnh! Hồi Sinh...');
+            console.log('[CẢNH BÁO] Bot chết ở Sảnh! Tự động Hồi Sinh...');
             setTimeout(() => bot.respawn(), 2000);
         } else {
             console.log('[CẢNH BÁO] Bot bị chết! Nằm chờ kéo hồi sinh...');
@@ -199,11 +200,6 @@ function createBot() {
         isLoggingIn = false;
         botState = 'DISCONNECTED'; 
         bot.isFarmingActive = false;
-
-        if (isKilledByAdmin) {
-            console.log('🛑 🛑 🛑 ĐÃ KHÓA TỰ ĐỘNG VÀO LẠI! MUỐN CHẠY TIẾP HÃY RESTART CODE! 🛑 🛑 🛑');
-            return; 
-        }
 
         if (isSonarKick) {
             isSonarKick = false; 
@@ -217,6 +213,7 @@ function createBot() {
                 
                 if (waitTime <= 0) {
                     clearInterval(countdownInterval);
+                    console.log(`[Anti-Bot] Hết giờ! Vô lại thôi!!!`);
                     createBot();
                 }
             }, 1000); 
@@ -238,14 +235,19 @@ function createBot() {
 // ==========================================
 // CÁC HÀM TRỢ THỦ QUẢN LÝ BỘ NHỚ PHÂN BẢN ĐỒ
 // ==========================================
+
+// 1. Lưu tọa độ bãi farm, lọc trùng để tránh tốn bộ nhớ
 function registerPlot(pos) {
     const key = `${pos.x},${pos.y},${pos.z}`;
     if (!knownFarmPlots.some(p => `${p.x},${p.y},${p.z}` === key)) {
         knownFarmPlots.push(pos.clone());
-        if (knownFarmPlots.length > 1000) knownFarmPlots.shift();
+        if (knownFarmPlots.length > 1000) {
+            knownFarmPlots.shift();
+        }
     }
 }
 
+// 2. Quét thụ động xung quanh để thu thập dữ liệu bản đồ bướu
 function passiveScan(bot) {
     const found = bot.findBlocks({
         matching: (block) => block.name === 'soul_sand' || block.name === 'nether_wart',
@@ -256,22 +258,22 @@ function passiveScan(bot) {
         const block = bot.blockAt(pos);
         if (block) {
             const cropPos = block.name === 'soul_sand' ? pos.offset(0, 1, 0) : pos;
-            const blockAbove = bot.blockAt(cropPos);
-            if (!blockAbove || blockAbove.boundingBox !== 'block') {
-                 registerPlot(cropPos);
-            }
+            registerPlot(cropPos);
         }
     }
 }
 
+// 3. Tìm mục tiêu tiếp theo (Ưu tiên ô đã load trong bộ nhớ -> Quét 3D xung quanh -> Đi tuần tra tọa độ xa chưa load)
 async function getNextTargetBlock(bot) {
     passiveScan(bot); 
+
     let bestFarmTarget = null;
     let minFarmDist = Infinity;
     let bestPatrolTarget = null;
 
     for (const pos of knownFarmPlots) {
         const block = bot.blockAt(pos);
+        
         if (block) {
             const isMatureWart = block.name === 'nether_wart' && block.metadata === 3;
             const isSoilEmpty = block.name === 'air' && bot.blockAt(pos.offset(0, -1, 0))?.name === 'soul_sand';
@@ -288,9 +290,14 @@ async function getNextTargetBlock(bot) {
         }
     }
 
-    if (bestFarmTarget) return { type: 'farm', pos: bestFarmTarget };
+    if (bestFarmTarget) {
+        return { type: 'farm', pos: bestFarmTarget };
+    }
 
-    const foundWart = bot.findBlock({ matching: (block) => block.name === 'nether_wart' && block.metadata === 3, maxDistance: 16 });
+    const foundWart = bot.findBlock({
+        matching: (block) => block.name === 'nether_wart' && block.metadata === 3,
+        maxDistance: 16
+    });
     if (foundWart) return { type: 'farm', pos: foundWart };
 
     const foundEmptySoil = bot.findBlock({
@@ -301,74 +308,12 @@ async function getNextTargetBlock(bot) {
         maxDistance: 16
     });
     if (foundEmptySoil) return { type: 'farm', pos: foundEmptySoil.position.offset(0, 1, 0) };
-    if (bestPatrolTarget) return { type: 'patrol', pos: bestPatrolTarget };
-    return null;
-}
 
-// ======================================================================
-// [LÕI ĐIỀU HƯỚNG THÔNG MINH] - BIẾT NHẢY, LÁCH NÉ TƯỜNG
-// ======================================================================
-async function smartMove(bot, targetPos, isPortal = false) {
-    let steps = 0;
-    const stopDistance = isPortal ? 0.8 : 2.0; 
-    let lastPos = bot.entity.position.clone();
-    let stuckCount = 0;
-
-    while (bot.entity.position.distanceTo(targetPos) > stopDistance && botState === 'FARMING' && bot.isFarmingActive && steps < 600) {
-        
-        if (bot.food <= 14) {
-            console.log('[Thức Ăn] Hụt đùi gà! Gõ /feed khẩn cấp...');
-            bot.chat('/feed');
-            await sleep(500); 
-        }
-
-        // Nhìn cao lên xíu để nhảy dễ lọt qua cửa
-        await bot.lookAt(targetPos.offset(0.5, 1.2, 0.5)); 
-        bot.setControlState('forward', true);
-        bot.setControlState('sprint', true); 
-        
-        // --- CẢM BIẾN VƯỢT VẬT CẢN ---
-        const distMoved = bot.entity.position.distanceTo(lastPos);
-        if (distMoved < 0.05) { 
-            stuckCount++; // Đang kẹt
-        } else {
-            stuckCount = 0; // Đang đi mượt
-            bot.setControlState('jump', false);
-            bot.setControlState('left', false);
-            bot.setControlState('right', false);
-        }
-        lastPos = bot.entity.position.clone();
-
-        // Xử lý khi kẹt
-        if (stuckCount > 1) { 
-            bot.setControlState('jump', true); // Kẹt nhẹ gờ đất -> Nhảy
-        }
-        if (stuckCount > 10) { 
-            bot.setControlState('jump', true); // Kẹt húc tường -> Lách nhẹ tìm đường
-            bot.setControlState(Math.random() > 0.5 ? 'left' : 'right', true);
-        }
-        if (stuckCount > 25) { 
-            stuckCount = 0; // Kẹt quá lâu, nhả ra để reset góc lag
-        }
-
-        // Né dung nham dưới chân
-        const blockAtFeet = bot.blockAt(bot.entity.position);
-        if (blockAtFeet && (blockAtFeet.name.includes('lava') || blockAtFeet.name.includes('water'))) {
-            bot.setControlState('jump', true);
-        }
-
-        await sleep(50); // Quét cảm biến mỗi 50ms (rất nhạy)
-        steps++;
-
-        if (isPortal) {
-            const isNether = bot.game.dimension === 'minecraft:the_nether' || bot.game.dimension === -1 || bot.game.dimension === 'nether';
-            if (isNether) {
-                console.log('[Nether] Đã xuyên qua cổng thành công!');
-                break;
-            }
-        }
+    if (bestPatrolTarget) {
+        return { type: 'patrol', pos: bestPatrolTarget };
     }
-    bot.clearControlStates();
+
+    return null;
 }
 
 // ======================================================================
@@ -388,7 +333,7 @@ async function startAutoFarmNetherWart(bot) {
                 const totalWarts = warts.reduce((sum, item) => sum + item.count, 0);
 
                 if (totalWarts > 640 || bot.inventory.emptySlotCount() <= 3) {
-                    console.log('[!] Balo đầy bướu! Tiến hành dọn rác và cất rương...');
+                    console.log('[!] Balo đầy bướu! Tiến hành dọn rác và cất rương xếp tầng...');
                     await clearJunk(bot);              
                     await depositWartToStackChests(bot); 
                     continue; 
@@ -398,27 +343,19 @@ async function startAutoFarmNetherWart(bot) {
                 bot.chat('/warp nether');
                 await sleep(8000); 
 
-                const portalBlock = bot.findBlock({
+                const portalPos = bot.findBlock({
                     matching: [bot.registry.blocksByName.portal?.id, bot.registry.blocksByName.nether_portal?.id].filter(Boolean),
                     maxDistance: 32
                 });
 
-                if (portalBlock) {
-                    console.log('[Nether] Đã tìm thấy cổng! Đang dùng kỹ năng Vượt Địa Hình chạy vào...');
-                    await smartMove(bot, portalBlock.position, true);
-                    await sleep(5000); // Chờ server chuyển map
+                if (portalPos) {
+                    await walkToPortal(bot); // Sử dụng module tính toán tâm cổng mới
                 } else {
-                    console.log('[-] Lỗi: Không tìm thấy cổng địa ngục nào quanh điểm Warp!');
+                    console.log('[-] Lỗi: Không tìm thấy cổng địa ngục nào quanh đây!');
                     await sleep(4000);
                 }
 
             } else {
-                const exactPortalPos = new Vec3(-386.5, 60, -91.5);
-                if (bot.entity.position.distanceTo(exactPortalPos) > 2.0) {
-                    console.log(`[Nether] Tiến thẳng tới tọa độ bãi Farm (X:${exactPortalPos.x} Y:${exactPortalPos.y} Z:${exactPortalPos.z})...`);
-                    await smartMove(bot, exactPortalPos, true);
-                }
-
                 const warts = bot.inventory.items().filter(item => item.name === 'nether_wart');
                 const totalWarts = warts.reduce((sum, item) => sum + item.count, 0);
 
@@ -440,17 +377,94 @@ async function startAutoFarmNetherWart(bot) {
     }
 }
 
-async function fastEquip(itemId) {
-    if (currentBot.heldItem && currentBot.heldItem.type === itemId) return true;
-    const hasItem = currentBot.inventory.items().find(i => i.type === itemId);
-    if (!hasItem) return false; 
-    try { 
-        await currentBot.equip(itemId, 'hand'); 
-        if (currentBot.heldItem && currentBot.heldItem.type === itemId) return true; 
-        return false; 
-    } catch (e) { return false; }
+// --- MODULE 1: ĐI QUA CỔNG ĐỊA NGỤC (TỰ TÍNH TÂM CỔNG CHỐNG ĐÂM ĐẦU VÀO CỘT ĐÁ) ---
+async function walkToPortal(bot) {
+    console.log('[Nether] Đang quét cổng địa ngục để xác định tâm cổng...');
+    
+    // Tìm tối đa 12 block cổng tím gần đó để làm mốc tính toán
+    const portalPositions = bot.findBlocks({
+        matching: (block) => block.name === 'portal' || block.name === 'nether_portal',
+        maxDistance: 32,
+        count: 12
+    });
+
+    if (portalPositions.length === 0) {
+        console.log('[-] Lỗi: Không thể định vị tọa độ cổng địa ngục!');
+        return;
+    }
+
+    // Tính toán trung tâm (trung bình cộng tọa độ cổng tím để né hoàn toàn viền Obsidian)
+    let sumX = 0, sumY = 0, sumZ = 0;
+    for (const pos of portalPositions) {
+        sumX += pos.x;
+        sumY += pos.y;
+        sumZ += pos.z;
+    }
+    const avgPortalPos = new Vec3(
+        Math.floor(sumX / portalPositions.length) + 0.5,
+        Math.floor(sumY / portalPositions.length),
+        Math.floor(sumZ / portalPositions.length) + 0.5
+    );
+
+    console.log(`[Nether] Tâm cổng định vị tại X:${avgPortalPos.x} Y:${avgPortalPos.y} Z:${avgPortalPos.z}. Tiến vào cổng...`);
+
+    let steps = 0;
+    let lastPos = bot.entity.position.clone();
+    let stuckTicks = 0;
+
+    while (bot.entity.position.distanceTo(avgPortalPos) > 1.2 && botState === 'FARMING' && bot.isFarmingActive && steps < 120) {
+        await bot.lookAt(avgPortalPos.offset(0, 1, 0)); // Nhìn thẳng vào tâm cổng tím
+        bot.setControlState('forward', true);
+        
+        // Cơ chế bơi tự động nếu ở trong dung nham
+        const blockAtFeet = bot.blockAt(bot.entity.position);
+        if (blockAtFeet && (blockAtFeet.name.includes('lava') || blockAtFeet.name.includes('water'))) {
+            bot.setControlState('jump', true);
+        } else {
+            bot.setControlState('jump', false);
+        }
+
+        await sleep(100);
+
+        // --- CẢM BIẾN CHỐNG KẸT ---
+        const currentPos = bot.entity.position;
+        const distMoved = lastPos.distanceTo(currentPos);
+        lastPos = currentPos.clone();
+
+        if (distMoved < 0.12) {
+            stuckTicks++;
+        } else {
+            stuckTicks = 0;
+        }
+
+        // Nếu kẹt đâm đầu vào cột Obsidian viền cổng quá 500ms
+        if (stuckTicks >= 5) {
+            console.log('>>> [Tránh vật cản] Bot kẹt cột cổng! Đang lùi và né sang bên cạnh...');
+            bot.setControlState('forward', false);
+            bot.setControlState('jump', false);
+
+            // Lùi lại 1 chút
+            bot.setControlState('back', true);
+            await sleep(300);
+            bot.setControlState('back', false);
+
+            // Lách ngang trái/phải ngẫu nhiên để vượt qua
+            const sidestep = Math.random() < 0.5 ? 'left' : 'right';
+            bot.setControlState(sidestep, true);
+            await sleep(500);
+            bot.setControlState(sidestep, false);
+
+            stuckTicks = 0; 
+        }
+
+        steps++;
+    }
+    bot.clearControlStates();
+    console.log('[Nether] Đã lọt vào tâm cổng địa ngục! Đợi 6 giây chuyển map...');
+    await sleep(6000);
 }
 
+// --- MODULE 2: THU HOẠCH, GIEO TRỒNG & TUẦN TRA TẦM XA ---
 async function farmNetherWart(bot) {
     const result = await getNextTargetBlock(bot);
 
@@ -458,83 +472,189 @@ async function farmNetherWart(bot) {
         const targetPos = result.pos;
 
         if (result.type === 'farm') {
-            await smartMove(bot, targetPos, false);
+            // A. CHẾ ĐỘ FARM (ĐI ĐẾN ĐẤT TRỐNG HOẶC BƯỚU CHÍN ĐÃ LOAD)
+            await bot.lookAt(targetPos.offset(0.5, 0.5, 0.5));
+            let steps = 0;
+            let lastPos = bot.entity.position.clone();
+            let stuckTicks = 0;
+
+            while (bot.entity.position.distanceTo(targetPos) > 3 && botState === 'FARMING' && bot.isFarmingActive && steps < 50) {
+                bot.setControlState('forward', true);
+                await bot.lookAt(targetPos.offset(0.5, 0.5, 0.5));
+                
+                const blockAtFeet = bot.blockAt(bot.entity.position);
+                if (blockAtFeet && (blockAtFeet.name.includes('lava') || blockAtFeet.name.includes('water'))) {
+                    bot.setControlState('jump', true);
+                } else {
+                    bot.setControlState('jump', false);
+                }
+
+                await sleep(100);
+
+                // --- CẢM BIẾN CHỐNG KẸT KHI ĐI FARM ---
+                const currentPos = bot.entity.position;
+                const distMoved = lastPos.distanceTo(currentPos);
+                lastPos = currentPos.clone();
+
+                if (distMoved < 0.12) {
+                    stuckTicks++;
+                } else {
+                    stuckTicks = 0;
+                }
+
+                if (stuckTicks >= 5) {
+                    console.log('>>> [Tránh vật cản] Kẹt chướng ngại vật khi đang đi farm! Đang lách né...');
+                    bot.setControlState('forward', false);
+                    bot.setControlState('jump', false);
+
+                    // Lùi lại
+                    bot.setControlState('back', true);
+                    await sleep(300);
+                    bot.setControlState('back', false);
+
+                    // Lách bên
+                    const sidestep = Math.random() < 0.5 ? 'left' : 'right';
+                    bot.setControlState(sidestep, true);
+                    await sleep(400);
+                    bot.setControlState(sidestep, false);
+
+                    stuckTicks = 0;
+                }
+
+                steps++;
+            }
+            bot.clearControlStates();
 
             const block = bot.blockAt(targetPos);
             if (block) {
                 if (block.name === 'nether_wart' && block.metadata === 3) {
+                    // Thu hoạch bướu địa ngục chín
                     await bot.dig(block);
                     await sleep(200);
 
-                    const wartId = bot.registry.itemsByName.nether_wart.id;
-                    const isReady = await fastEquip(wartId);
-                    if (isReady) {
+                    // Trồng lại
+                    const wartItem = bot.inventory.items().find(item => item.name === 'nether_wart');
+                    if (wartItem) {
+                        await bot.equip(wartItem, 'hand');
                         const soulSandBlock = bot.blockAt(targetPos.offset(0, -1, 0));
                         if (soulSandBlock && soulSandBlock.name === 'soul_sand') {
                             await bot.placeBlock(soulSandBlock, new Vec3(0, 1, 0));
                             await sleep(200);
+                            console.log('[Farm] Thu hoạch và tái gieo trồng bướu thành công!');
                         }
                     }
                 } else if (block.name === 'air') {
+                    // Trồng mới lên cát linh hồn trống
                     const soulSandBlock = bot.blockAt(targetPos.offset(0, -1, 0));
                     if (soulSandBlock && soulSandBlock.name === 'soul_sand') {
-                        const wartId = bot.registry.itemsByName.nether_wart.id;
-                        const isReady = await fastEquip(wartId);
-                        if (isReady) {
+                        const wartItem = bot.inventory.items().find(item => item.name === 'nether_wart');
+                        if (wartItem) {
+                            await bot.equip(wartItem, 'hand');
                             await bot.placeBlock(soulSandBlock, new Vec3(0, 1, 0));
                             await sleep(200);
+                            console.log('[Farm] Đã lấp đầy hạt giống vào ô cát linh hồn trống!');
                         }
                     }
                 }
             }
         } else if (result.type === 'patrol') {
-            console.log(`[Patrol] Mở map tìm bãi xa (X:${targetPos.x} Z:${targetPos.z})...`);
-            await smartMove(bot, targetPos, false);
-            passiveScan(bot);
+            // B. CHẾ ĐỘ TUẦN TRA ĐIỂM Ở XA (TIẾN VỀ PHÍA TỌA ĐỘ CHƯA LOAD ĐỂ MỞ BẢN ĐỒ)
+            console.log(`[Patrol] Đang tìm bãi cũ ở xa (Tọa độ chưa nạp: X:${targetPos.x} Y:${targetPos.y}) để khai phá...`);
+            await bot.lookAt(targetPos.offset(0.5, 1, 0.5));
+            
+            let steps = 0;
+            let lastPos = bot.entity.position.clone();
+            let stuckTicks = 0;
+
+            while (bot.entity.position.distanceTo(targetPos) > 6 && steps < 35 && botState === 'FARMING' && bot.isFarmingActive) {
+                bot.setControlState('forward', true);
+                await bot.lookAt(targetPos.offset(0.5, 1, 0.5));
+
+                const blockAtFeet = bot.blockAt(bot.entity.position);
+                if (blockAtFeet && (blockAtFeet.name.includes('lava') || blockAtFeet.name.includes('water'))) {
+                    bot.setControlState('jump', true);
+                } else {
+                    bot.setControlState('jump', false);
+                }
+
+                passiveScan(bot); // Quét thụ động bãi dọc đường đi tuần
+
+                await sleep(100);
+
+                // --- CẢM BIẾN CHỐNG KẸT KHI TUẦN TRA ---
+                const currentPos = bot.entity.position;
+                const distMoved = lastPos.distanceTo(currentPos);
+                lastPos = currentPos.clone();
+
+                if (distMoved < 0.12) {
+                    stuckTicks++;
+                } else {
+                    stuckTicks = 0;
+                }
+
+                if (stuckTicks >= 5) {
+                    console.log('>>> [Tránh vật cản] Kẹt cột đá khi đang đi tuần tra! Đang luồn lách...');
+                    bot.setControlState('forward', false);
+                    bot.setControlState('jump', false);
+
+                    bot.setControlState('back', true);
+                    await sleep(300);
+                    bot.setControlState('back', false);
+
+                    const sidestep = Math.random() < 0.5 ? 'left' : 'right';
+                    bot.setControlState(sidestep, true);
+                    await sleep(400);
+                    bot.setControlState(sidestep, false);
+
+                    stuckTicks = 0;
+                }
+
+                steps++;
+            }
+            bot.clearControlStates();
         }
     } else {
-        console.log('[Farm] Đang đi thám hiểm tìm bãi bướu...');
+        // C. CHẾ ĐỘ THÁM HIỂM (ĐI KHÁM PHÁ NGẪU NHIÊN KHI CHƯA CÓ BỘ NHỚ TRONG KHU VỰC)
+        console.log('[Farm] Không có mục tiêu khả dụng. Đang đi thám hiểm ngẫu nhiên để ghi nhận thêm bãi bướu...');
         const randomYaw = Math.random() * Math.PI * 2;
         await bot.look(randomYaw, bot.entity.pitch, true);
+        bot.setControlState('forward', true);
         
         let steps = 0;
-        let lastP = bot.entity.position.clone();
-        let stuck = 0;
-        
-        while (steps < 40 && botState === 'FARMING' && bot.isFarmingActive) {
-            if (bot.food <= 14) { bot.chat('/feed'); await sleep(500); }
-            
-            bot.setControlState('forward', true);
-            bot.setControlState('sprint', true);
-
-            const dist = bot.entity.position.distanceTo(lastP);
-            if (dist < 0.05) stuck++; else stuck = 0;
-            lastP = bot.entity.position.clone();
-
-            if (stuck > 1) bot.setControlState('jump', true);
-            else bot.setControlState('jump', false);
-
+        while (steps < 30 && botState === 'FARMING' && bot.isFarmingActive) {
             const blockAtFeet = bot.blockAt(bot.entity.position);
-            if (blockAtFeet && (blockAtFeet.name.includes('lava') || blockAtFeet.name.includes('water'))) bot.setControlState('jump', true);
+            if (blockAtFeet && (blockAtFeet.name.includes('lava') || blockAtFeet.name.includes('water'))) {
+                bot.setControlState('jump', true);
+            } else {
+                bot.setControlState('jump', false);
+            }
             
             passiveScan(bot);
-            await sleep(50);
+            
+            await sleep(100);
             steps++;
         }
         bot.clearControlStates();
     }
 }
 
+// --- MODULE 3: DỌN SẠCH RÁC TRONG BALO ---
 async function clearJunk(bot) {
     const allowed = ['nether_wart', 'compass']; 
     const junk = bot.inventory.items().filter(i => !allowed.includes(i.name));
+    
     if (junk.length === 0) return;
 
+    console.log(`[+] Phát hiện ${junk.length} món rác trong balo. Tiến hành dọn dẹp...`);
     try {
         bot.chat('/trash');
+        
         const trashWindow = await new Promise((resolve, reject) => {
-            const timeout = setTimeout(() => reject(new Error('Thùng rác mở quá lâu')), 3000);
-            bot.once('windowOpen', (win) => { clearTimeout(timeout); resolve(win); });
+            const timeout = setTimeout(() => reject(new Error('Thùng rác mở quá lâu không phản hồi')), 3000);
+            bot.once('windowOpen', (win) => {
+                clearTimeout(timeout);
+                resolve(win);
+            });
         });
         await sleep(1000); 
 
@@ -545,56 +665,178 @@ async function clearJunk(bot) {
                 await sleep(300); 
             }
         }
+        
         if (bot.currentWindow) bot.closeWindow(bot.currentWindow);
+        console.log('[+] Đã phi tang rác hoàn tất!');
         await sleep(500);
     } catch (e) {
+        console.log('[-] Lỗi dọn rác:', e.message);
         if (bot.currentWindow) bot.closeWindow(bot.currentWindow);
     }
 }
 
+// --- MODULE 4: CẤT ĐỒ THÁP RƯƠNG TRỤC DỌC ---
 async function depositWartToStackChests(bot) {
     const warts = bot.inventory.items().filter(item => item.name === 'nether_wart');
-    let totalWarts = warts.reduce((sum, item) => sum + item.count, 0);
+    const totalWarts = warts.reduce((sum, item) => sum + item.count, 0);
 
-    if (totalWarts <= 64) return;
+    if (totalWarts <= 64) {
+        console.log('[+] Lượng bướu trong balo quá ít, giữ lại làm hạt giống.');
+        return; 
+    }
 
-    console.log(`[+] Đang mở rương cất Bướu... (Hiện có: ${totalWarts} củ)`);
-    const chestPos = bot.findBlock({ matching: bot.registry.blocksByName.chest.id, maxDistance: 5 });
-    if (!chestPos) { console.log('[-] Lỗi: Không thấy rương!'); return; }
+    console.log(`[+] Đang định vị tháp rương... (Tổng bướu đang có: ${totalWarts} củ)`);
+    
+    const signPos = bot.findBlock({
+        matching: (block) => block.name === 'wall_sign' || block.name === 'standing_sign',
+        maxDistance: 6
+    });
 
-    try {
-        const chestBlock = bot.blockAt(chestPos.position);
-        const chest = await bot.openChest(chestBlock);
-        await sleep(500); 
+    let lowestChest = null;
 
-        let toDeposit = totalWarts - 64;
-        const wartId = bot.registry.itemsByName.nether_wart.id;
+    if (signPos) {
+        const signBlock = bot.blockAt(signPos);
+        const signText = getSignText(signBlock);
         
-        try {
-            await chest.deposit(wartId, null, toDeposit);
-            await sleep(500);
-        } catch (e) {}
+        if (signText.includes('nether') || signText.includes('wart') || signText.includes('bướu') || signText.includes('địa ngục')) {
+            console.log('[+] Tìm thấy biển báo ghi nhãn Bướu Địa Ngục!');
+            
+            const nearbyChests = bot.findBlocks({
+                matching: bot.registry.blocksByName.chest.id,
+                maxDistance: 2,
+                count: 3
+            });
 
-        chest.close();
-        await sleep(500); 
-        console.log(`[+] Cất hàng xong! (Giữ lại 1 stack giống)`);
-    } catch (err) {
-        if (bot.currentWindow) bot.closeWindow(bot.currentWindow); 
+            let lowestY = Infinity;
+            for (const pos of nearbyChests) {
+                if (pos.y < lowestY) {
+                    lowestY = pos.y;
+                    lowestChest = bot.blockAt(pos);
+                }
+            }
+        }
+    }
+
+    if (!lowestChest) {
+        const chestPos = bot.findBlock({
+            matching: bot.registry.blocksByName.chest.id,
+            maxDistance: 4
+        });
+        if (chestPos) {
+            lowestChest = bot.blockAt(chestPos);
+            console.log('[!] Cảnh báo: Không phát hiện biển báo, lấy rương gần nhất trước mặt làm rương gốc...');
+        }
+    }
+
+    if (!lowestChest) {
+        console.log('[-] Lỗi: Không tìm thấy chiếc rương nào xung quanh điểm spawn!');
+        return; 
+    }
+
+    const chestStack = [];
+    chestStack.push(lowestChest); 
+
+    const middleChestPos = lowestChest.position.offset(0, 1, 0);
+    const middleChest = bot.blockAt(middleChestPos);
+    if (middleChest && middleChest.name === 'chest') {
+        chestStack.push(middleChest); 
+    }
+
+    const topChestPos = middleChestPos.offset(0, 1, 0);
+    const topChest = bot.blockAt(topChestPos);
+    if (topChest && topChest.name === 'chest') {
+        chestStack.push(topChest); 
+    }
+
+    console.log(`[+] Xác định tháp rương thẳng đứng gồm ${chestStack.length} rương. Bắt đầu phân loại cất đồ...`);
+
+    let toDeposit = totalWarts - 64; 
+
+    for (let i = 0; i < chestStack.length; i++) {
+        if (toDeposit <= 0) break;
+        const currentChestBlock = chestStack[i];
+        console.log(`[+] Đang mở rương tầng ${i + 1} (Tọa độ Y: ${currentChestBlock.position.y})...`);
+
+        try {
+            const chest = await Promise.race([
+                bot.openChest(currentChestBlock),
+                new Promise((_, reject) => setTimeout(() => reject(new Error('Mở rương quá 3.5 giây không phản hồi')), 3500))
+            ]);
+
+            await sleep(500);
+
+            const wartsInInv = bot.inventory.items().filter(item => item.name === 'nether_wart');
+            for (const item of wartsInInv) {
+                if (toDeposit <= 0) break;
+                const amount = Math.min(item.count, toDeposit);
+                try {
+                    await chest.deposit(item.type, null, amount);
+                    toDeposit -= amount;
+                    await sleep(300);
+                } catch (depositErr) {
+                    console.log(`[-] Rương tầng ${i + 1} đã đầy hoặc lỗi! Chuẩn bị chuyển lên tầng phía trên...`);
+                    break; 
+                }
+            }
+
+            chest.close();
+            await sleep(500);
+
+        } catch (err) {
+            console.log(`[-] Lỗi tương tác rương tầng ${i + 1}: ${err.message}`);
+            if (bot.currentWindow) bot.closeWindow(bot.currentWindow);
+            await sleep(1000); 
+        }
+    }
+
+    if (toDeposit > 0) {
+        console.log(`[-] Cảnh báo: Toàn bộ tháp rương đứng đã đầy cứng, còn dư ${toDeposit} bướu trong balo!`);
+    } else {
+        console.log('[+] Đã gom sạch bướu địa ngục vào tháp rương an toàn!');
     }
 }
 
+// --- TRỢ THỦ 1: ĐỌC CHỮ TRÊN BIỂN BÁO ---
+function getSignText(block) {
+    if (!block || !block.blockEntity) return '';
+    let text = '';
+    for (let i = 1; i <= 4; i++) {
+        const line = block.blockEntity[`Text${i}`];
+        if (line) {
+            try {
+                const parsed = JSON.parse(line);
+                text += ' ' + (parsed.text || parsed || '');
+            } catch (e) {
+                text += ' ' + line;
+            }
+        }
+    }
+    return text.toLowerCase();
+}
+
+// ==========================================
+// TÍNH NĂNG CHAT TỪ TERMINAL
+// ==========================================
 let lastChatTime = 0;
 const rl = require('readline').createInterface({ input: process.stdin, output: process.stdout });
+
 rl.on('line', async (input) => {
-    if (!currentBot) return;
+    if (!currentBot) return console.log('[Lỗi] Bot chưa vào game!');
     const rawInput = input.trim();
     try {
-        if (rawInput.startsWith('/')) { currentBot.chat(rawInput); return; }
+        if (rawInput.startsWith('/')) {
+            currentBot.chat(rawInput);
+            console.log(`[Lệnh]: ${rawInput}`);
+            return;
+        }
         const now = Date.now();
-        if (now - lastChatTime < 1500) return;
+        if (now - lastChatTime < 1500) return console.log('>>> [CẢNH BÁO] Spam là server khóa mõm!');
         lastChatTime = now;
         currentBot.chat(rawInput); 
-    } catch (error) {}
+        console.log(`[Chat]: ${rawInput}`);
+    } catch (error) {
+        console.log('>>> [Lỗi Điều Khiển]:', error.message);
+    }
 });
 
 createBot();
