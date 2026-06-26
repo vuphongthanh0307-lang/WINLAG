@@ -53,7 +53,7 @@ function createBot() {
     const bot = mineflayer.createBot({
         host: 'aemine.vn',
         port: 25565,
-        username: 'AppleMeoMeoz', 
+        username: 'winlxag5553', 
         version: '1.12.2',
         viewDistance: 'tiny', 
         checkTimeoutInterval: 60000,
@@ -73,7 +73,7 @@ function createBot() {
             isLoggingIn = true;
             console.log('[Hub] Đã kết nối server, chuẩn bị đăng nhập...');
             await sleep(2000);
-            bot.chat('/dn 18112007'); 
+            bot.chat('/dn Windvu@2@1@9@30849009630'); 
             console.log('[Hub] Đã gửi lệnh login! Đang nghe ngóng...');
             botState = 'FIRST_LOGIN';
         }
@@ -93,7 +93,7 @@ function createBot() {
 
         // ĐĂNG NHẬP LẠI NẾU BỊ ĐÒI
         if (lowerMsg.includes('đăng nhập bằng lệnh: /dn') || lowerMsg.includes('vui lòng đăng nhập')) {
-            setTimeout(() => bot.chat('/dn 18112007'), 1500); 
+            setTimeout(() => bot.chat('/dn Windvu@2@1@9@30849009630'), 1500); 
         }
 
         // NHẬN DIỆN SONAR ĐANG QUÉT
