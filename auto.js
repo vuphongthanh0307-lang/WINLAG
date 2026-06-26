@@ -22,7 +22,7 @@ console.error = function(...args) {
     originalError.apply(console, args);
 };
 
-const RECONNECT_DELAY = 20000; 
+const RECONNECT_DELAY = 40000; 
 
 // ==========================================
 // GIỮ MẠNG CHO REPLIT
