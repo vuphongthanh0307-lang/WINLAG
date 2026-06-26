@@ -29,7 +29,7 @@ const RECONNECT_DELAY = 40000;
 // ==========================================
 const app = express();
 const port = process.env.PORT || 3000;
-app.get('/', (req, res) => res.send('Bot AppleMeoMeoz đang Farm VIP Pro Khoai Tây!'));
+app.get('/', (req, res) => res.send('Bot Wind đang Farm VIP Pro Khoai Tây!'));
 app.listen(port, () => console.log(`[Web] Server đang chạy trên port ${port}`));
 
 process.on('uncaughtException', (err) => console.log('[Khiên Bất Tử] Chặn lỗi:', err.message));
@@ -45,6 +45,7 @@ let isFarmLoopRunning = false;
 let isGUIOpen = false; 
 let failCount = 0;
 let isSonarKick = false; 
+let isKilledByAdmin = false; // [!] CỜ ĐÓNG BĂNG HỆ THỐNG
 
 function createBot() {
     const bot = mineflayer.createBot({
@@ -79,14 +80,16 @@ function createBot() {
         const lowerMsg = message.toLowerCase();
 
         // ==========================================
-        // [NÂNG CẤP VIP] BÁO ĐỘNG ĐỎ: RÚT PHÍCH CẮM KHI THẤY STAFF
+        // [NÂNG CẤP VIP] BÁO ĐỘNG ĐỎ: ĐÓNG BĂNG VĨNH VIỄN KHI THẤY STAFF
         // ==========================================
-        if (message.includes('Losts vừa tham gia') || message.includes('Nugget_Champion vừa tham gia')) {
+        if (lowerMsg.includes('losts vừa tham gia') || lowerMsg.includes('nugget_champion vừa tham gia')) {
             console.log('\n================================================================');
             console.log('🚨 [BÁO ĐỘNG ĐỎ] CHẠY NGAY ĐI! ADMIN/STAFF VỪA VÀO SERVER! 🚨');
-            console.log('🚨 RÚT PHÍCH CẮM KHẨN CẤP! TẮT TOÀN BỘ HỆ THỐNG ĐỂ BẢO TOÀN ACC! 🚨');
+            console.log('🚨 ĐÓNG BĂNG HỆ THỐNG VĨNH VIỄN ĐỂ BẢO TOÀN ACC! 🚨');
             console.log('================================================================\n');
-            process.exit(0); 
+            isKilledByAdmin = true; // Cắm cờ không cho Reconnect
+            bot.quit();             // Rút phích cắm khỏi server
+            return;
         }
 
         // 1. TỰ ĐỘNG GIẢI CAPTCHA
@@ -215,6 +218,12 @@ function createBot() {
         isLoggingIn = false;
         botState = 'DISCONNECTED'; 
 
+        // [!] NẾU BỊ RƯỢT -> ĐÓNG BĂNG, KHÔNG BAO GIỜ RECONNECT NỮA
+        if (isKilledByAdmin) {
+            console.log('🛑 🛑 🛑 HỆ THỐNG ĐÃ KHÓA! BOT SẼ KHÔNG TỰ ĐỘNG VÀO LẠI ĐỂ TRÁNH ADMIN. MUỐN CHẠY TIẾP HÃY RESTART LẠI CODE TRÊN REPLIT! 🛑 🛑 🛑');
+            return; // Lệnh return này sẽ hủy cái vòng lặp vô tận của bot
+        }
+
         if (isSonarKick) {
             isSonarKick = false; 
             failCount = 0; 
@@ -247,7 +256,7 @@ function createBot() {
 }
 
 // ======================================================================
-// ĐỘNG CƠ MÁY CÀY VÔ CỰC (BẢN FULL KHOAI TÂY + FIX LỖI TAY KHÔNG)
+// ĐỘNG CƠ MÁY CÀY VÔ CỰC (BẢN KHOAI TÂY + FIX LỖI TAY KHÔNG)
 // ======================================================================
 async function startAutoFarmVipPro() {
     if (isFarmLoopRunning) return; 
@@ -262,7 +271,6 @@ async function startAutoFarmVipPro() {
             const potatoes = currentBot.inventory.items().filter(item => item.name === 'potato');
             const totalPotatoes = potatoes.reduce((sum, item) => sum + item.count, 0);
 
-            // Xả kho nếu Balo trên 10 stack Khoai tây hoặc sắp đầy rương
             if (totalPotatoes > 640 || currentBot.inventory.emptySlotCount() <= 3) {
                 console.log('[!] Báo động: Balo sắp nghẹt thở vì Khoai tây! Tạm dừng để xả hàng...');
                 await clearJunk();              
@@ -306,7 +314,7 @@ async function startAutoFarmVipPro() {
     }
 }
 
-// --- MODULE 1: DỌN RÁC (Giữ Khoai Tây) ---
+// --- MODULE 1: DỌN RÁC ---
 async function clearJunk() {
     const allowed = ['potato', 'bone', 'dye', 'compass']; 
     const junk = currentBot.inventory.items().filter(i => !allowed.includes(i.name));
@@ -343,7 +351,7 @@ async function clearJunk() {
     }
 }
 
-// --- MODULE 2: CẤT RƯƠNG (Cất Khoai Tây) ---
+// --- MODULE 2: CẤT RƯƠNG ---
 async function depositAllKeepOneStack() {
     const potatoes = currentBot.inventory.items().filter(item => item.name === 'potato');
     let totalPotatoes = potatoes.reduce((sum, item) => sum + item.count, 0);
@@ -464,7 +472,6 @@ async function fastEquip(itemId) {
     try { 
         await currentBot.equip(itemId, 'hand'); 
         
-        // KIỂM TRA CHÉO LẦN CUỐI: Xác nhận lại 100% trên tay đã cầm đồ thật chưa
         if (currentBot.heldItem && currentBot.heldItem.type === itemId) {
             return true; 
         }
