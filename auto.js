@@ -256,7 +256,12 @@ function passiveScan(bot) {
         const block = bot.blockAt(pos);
         if (block) {
             const cropPos = block.name === 'soul_sand' ? pos.offset(0, 1, 0) : pos;
-            registerPlot(cropPos);
+            
+            // [Thêm kiểm tra an toàn] Chỉ lưu block nếu phía trên nó không bị chặn cứng
+            const blockAbove = bot.blockAt(cropPos);
+            if (!blockAbove || blockAbove.boundingBox !== 'block') {
+                 registerPlot(cropPos);
+            }
         }
     }
 }
@@ -353,6 +358,8 @@ async function startAutoFarmNetherWart(bot) {
 
                 if (portalPos) {
                     await walkToPortal(bot, portalPos);
+                    // [QUAN TRỌNG] Đợi thêm sau khi (hy vọng) đã đi qua cổng
+                    await sleep(5000); 
                 } else {
                     console.log('[-] Lỗi: Không tìm thấy cổng địa ngục nào quanh đây!');
                     await sleep(4000);
@@ -384,12 +391,14 @@ async function startAutoFarmNetherWart(bot) {
 async function walkToPortal(bot, portalPos) {
     console.log('[Nether] Đã xác định vị trí cổng địa ngục! Đang tiến vào...');
     let steps = 0;
-    while (bot.entity.position.distanceTo(portalPos) > 1.5 && botState === 'FARMING' && bot.isFarmingActive && steps < 100) {
+    
+    // Tăng giới hạn steps lên 300 (tương đương 30 giây)
+    while (bot.entity.position.distanceTo(portalPos) > 1.5 && botState === 'FARMING' && bot.isFarmingActive && steps < 300) {
         await bot.lookAt(portalPos.offset(0.5, 1, 0.5));
         bot.setControlState('forward', true);
         
         const blockAtFeet = bot.blockAt(bot.entity.position);
-        if (blockAtFeet && (blockAtFeet.name.includes('lava') || blockAtFeet.name.includes('water'))) {
+        if (blockAtFeet && (blockAtFeet.name.includes('lava') || blockAtFeet.name.includes('water') || blockAtFeet.name.includes('fire'))) {
             bot.setControlState('jump', true);
         } else {
             bot.setControlState('jump', false);
@@ -397,12 +406,24 @@ async function walkToPortal(bot, portalPos) {
 
         await sleep(100);
         steps++;
+        
+        // Kiểm tra xem đã chuyển qua Nether chưa để thoát sớm
+        const isNether = bot.game.dimension === 'minecraft:the_nether' || bot.game.dimension === -1 || bot.game.dimension === 'nether';
+        if (isNether) break;
     }
+    
     bot.clearControlStates();
-    console.log('[Nether] Đã chạm cổng địa ngục! Đợi 6 giây chuyển map...');
-    await sleep(6000);
+    
+    const isNether = bot.game.dimension === 'minecraft:the_nether' || bot.game.dimension === -1 || bot.game.dimension === 'nether';
+    if (!isNether) {
+        console.log('[Nether] Đang chờ chuyển map...');
+        // Đợi tối đa 10 giây cho việc chuyển map
+        for(let i=0; i<10; i++) {
+            await sleep(1000);
+            if (bot.game.dimension === 'minecraft:the_nether' || bot.game.dimension === -1 || bot.game.dimension === 'nether') break;
+        }
+    }
 }
-
 // --- MODULE 2: THU HOẠCH, GIEO TRỒNG & TUẦN TRA TẦM XA ---
 async function farmNetherWart(bot) {
     const result = await getNextTargetBlock(bot);
